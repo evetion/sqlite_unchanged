@@ -16,6 +16,8 @@ int help() {
     return 1;
 }
 
+#define CHANGES = 9999
+
 int main(int argc, char *argv[])
 {
     bool check = true;
@@ -83,7 +85,7 @@ int main(int argc, char *argv[])
     printf("wal write value is at %u\n", wal_write);
 
     /* Open database */
-    rc = sqlite3_open("test.db", &db);
+    rc = sqlite3_open(argv[2], &db);
     if(rc){
         printf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
         return 1;
@@ -94,6 +96,7 @@ int main(int argc, char *argv[])
         - columns
         - row */
         exists = true;
+        valid = true;
         
         /* Check database */
         if (check) {
@@ -120,11 +123,11 @@ int main(int argc, char *argv[])
             }
             if (!exists) {
                 // CREATE TABLE
-                exists = true
+                exists = true;
             }
             // SET VALUES
             // SQL INSERT
-            valid = true
+            valid = true;
         }
     }
     sqlite3_close(db);
