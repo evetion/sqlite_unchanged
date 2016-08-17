@@ -1,4 +1,4 @@
-#include "sqlite/sqlite3.h"
+// #include "sqlite/sqlite3.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,7 +16,8 @@ int help() {
     return 1;
 }
 
-#define CHANGES = 9999
+#define CHANGES 999
+#define WAL 5
 
 int main(int argc, char *argv[])
 {
@@ -24,20 +25,13 @@ int main(int argc, char *argv[])
     bool exists = false;
     bool valid = false;
 
-    char *create_sql;
-    char *drop_sql;
-    char *insert_sql;
-    char *pragma_sql;
-    char *read_sql;
-
     FILE *sqldb;
-    int  rc;
-    sqlite3 *db;
     uint32_t changes;
 
     unsigned char header[100];
     unsigned char wal_read;
     unsigned char wal_write;
+    unsigned char bytes[4];
 
     /* check number of arguments */
     if (argc != 3) {
@@ -58,13 +52,44 @@ int main(int argc, char *argv[])
     }
 
     /* open sqlite file and read header */
-    sqldb = fopen(argv[2],"rb");
+    sqldb = fopen(argv[2],"rb+");
     if (!sqldb) {
         perror ("Error opening sqlite file.");
         return 1;
     }
     else
     {
+        /* set mode */
+        if (!check) {
+            // Set changes and convert to
+            // big endian byte array
+            changes = CHANGES;
+
+            bytes[0] = (changes >> 24) & 0xFF;
+            bytes[1] = (changes >> 16) & 0xFF;
+            bytes[2] = (changes >> 8) & 0xFF;
+            bytes[3] = changes & 0xFF;
+
+            // Set WAL read
+            wal_read = WAL;
+            fseek(sqldb, 17, SEEK_SET);
+            fwrite(&wal_read, 1, 1, sqldb);
+
+            // Set WAL write
+            wal_write = WAL;
+            fseek(sqldb, 1, SEEK_CUR);
+            fwrite(&wal_write, 1, 1, sqldb);
+
+            // Write changes
+            fseek(sqldb, 24, SEEK_SET);
+            fwrite(&bytes, 4, 1, sqldb);
+
+            // changes = bytes[3] | (bytes[2] << 8)  | (bytes[1] << 16) | (bytes[0] << 24);
+
+        /* check mode */
+        }
+        fseek(sqldb, 0, SEEK_SET);
+
         /* read complete header */
         fread(header, 1, 100, sqldb);
 
@@ -78,58 +103,19 @@ int main(int argc, char *argv[])
         /* header change value at 24..27 */
         // fseek(sqldb, 24, SEEK_SET);
         changes = header[27] | (header[26] << 8)  | (header[25] << 16) | (header[24] << 24);
-        fclose (sqldb);
-    }
-    printf("header change value is at %i\n", changes);
-    printf("wal read value is at %u\n", wal_read);
-    printf("wal write value is at %u\n", wal_write);
-
-    /* Open database */
-    rc = sqlite3_open(argv[2], &db);
-    if(rc){
-        printf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-        return 1;
-    } else {
-        /* Check existing meta table
-        so we know it exists and is correct
-        - table
-        - columns
-        - row */
-        exists = true;
-        valid = true;
         
-        /* Check database */
-        if (check) {
-            if (valid && exists) {
-                if ((wal_read != 1) || (wal_write != 1)) {
-                    perror("Database changed to WAL mode.");
-                    return 1;
-                } else {
-                    // SQL READ
-                    // COMPARE
-                }
-            } else {
-                perror("Can't read table, database is not original.");
-                return 1;
-            }
+        printf("header change value is at %i\n", changes);
+        printf("wal read value is at %u\n", wal_read);
+        printf("wal write value is at %u\n", wal_write);
 
-        /* Set meta table */
+        if ((wal_read != WAL) || (wal_write != WAL) || (changes != CHANGES)) {
+            perror ("File is not original.");
         } else {
-            // SET PRAGMA           
-            if (!valid) {
-                // DROP TABLE
-                //
-                exists = false;
-            }
-            if (!exists) {
-                // CREATE TABLE
-                exists = true;
-            }
-            // SET VALUES
-            // SQL INSERT
-            valid = true;
+            printf("File is original.");
         }
+        
+
+        fclose(sqldb);
     }
-    sqlite3_close(db);
     return 0;
 }
