@@ -1,29 +1,26 @@
-// #include "sqlite/sqlite3.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-
 
 /* display help */
 int help() {
-    printf("PoC for checking if SQLite database has been changed by comparing sqlite header with copy of header in database.\n");
-    printf("For more information see the README.md file.\n\n");
-    printf("Usage: sqlite_unchanged [-s | -c ] [file]\n");
-    printf("\t-s or --set:   store header in db\n");
-    printf("\t-c or --check: compare header with stored header\n");
-    printf("\tfile: filename or path\n");
-    return 1;
+    puts("PoC for checking if SQLite database has been changed by comparing sqlite header with copy of header in database.\n");
+    puts("For more information see the README.md file.\n");
+    puts("Usage: sqlite_unchanged [-s | -c ] [file]");
+    puts("\t-s or --set:   store header in db");
+    puts("\t-c or --check: compare header with stored header");
+    puts("\tfile: filename or path");
+    return(EXIT_FAILURE);
 }
 
-#define CHANGES 999
-#define WAL 5
+#define CHANGES 2147483647  // max uint32_t
+#define WAL 1  // legacy mode
 
 int main(int argc, char *argv[])
 {
     bool check = true;
-    bool exists = false;
-    bool valid = false;
 
     FILE *sqldb;
     uint32_t changes;
@@ -35,7 +32,6 @@ int main(int argc, char *argv[])
 
     /* check number of arguments */
     if (argc != 3) {
-        printf("number of arguments = %i\n", argc);
         return help();
     }
        
@@ -54,8 +50,8 @@ int main(int argc, char *argv[])
     /* open sqlite file and read header */
     sqldb = fopen(argv[2],"rb+");
     if (!sqldb) {
-        perror ("Error opening sqlite file.");
-        return 1;
+        perror("Error opening sqlite file:");
+        return(EXIT_FAILURE);
     }
     else
     {
@@ -72,19 +68,18 @@ int main(int argc, char *argv[])
 
             // Set WAL read
             wal_read = WAL;
-            fseek(sqldb, 17, SEEK_SET);
+            fseek(sqldb, 18, SEEK_SET);
             fwrite(&wal_read, 1, 1, sqldb);
 
             // Set WAL write
             wal_write = WAL;
-            fseek(sqldb, 1, SEEK_CUR);
             fwrite(&wal_write, 1, 1, sqldb);
 
             // Write changes
-            fseek(sqldb, 24, SEEK_SET);
+            fseek(sqldb, 4, SEEK_CUR);
             fwrite(&bytes, 4, 1, sqldb);
 
-            // changes = bytes[3] | (bytes[2] << 8)  | (bytes[1] << 16) | (bytes[0] << 24);
+            puts("Hardcoded values set, will now check for validity.");
 
         /* check mode */
         }
@@ -101,21 +96,19 @@ int main(int argc, char *argv[])
         wal_write = header[19];
 
         /* header change value at 24..27 */
-        // fseek(sqldb, 24, SEEK_SET);
         changes = header[27] | (header[26] << 8)  | (header[25] << 16) | (header[24] << 24);
         
-        printf("header change value is at %i\n", changes);
-        printf("wal read value is at %u\n", wal_read);
-        printf("wal write value is at %u\n", wal_write);
+        // printf("header change value is at %i\n", changes);
+        // printf("wal read value is at %u\n", wal_read);
+        // printf("wal write value is at %u\n", wal_write);
 
         if ((wal_read != WAL) || (wal_write != WAL) || (changes != CHANGES)) {
-            perror ("File is not original.");
+            puts("File is not original.");
         } else {
-            printf("File is original.");
+            puts("File is original.");
         }
-        
 
         fclose(sqldb);
     }
-    return 0;
+    return(EXIT_SUCCESS);
 }
