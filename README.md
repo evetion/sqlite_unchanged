@@ -1,4 +1,5 @@
 # sqlite_unchanged
+[![Build Status](https://travis-ci.org/evetion/sqlite_unchanged.svg?branch=master)](https://travis-ci.org/evetion/sqlite_unchanged)
 PoC for checking if SQLite database has been changed by hardcoding file change counter in header.
 
 ## Description
