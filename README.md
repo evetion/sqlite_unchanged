@@ -1,7 +1,7 @@
-## sqlite_unchanged
+# sqlite_unchanged
 PoC for checking if SQLite database has been changed by hardcoding file change counter in header.
 
-# Description
+## Description
 For a header description, see https://www.sqlite.org/fileformat2.html#section_1_2_6. 
 
 The file change counter and wal modes are hardcoded:
@@ -15,7 +15,7 @@ For each write transaction an sqlite database will have its file change counter 
 
 The only collision occurs if the file change counter overflows and returns to its hardcoded value after 2.147.483.647 write transactions.
 
-# Usage
+## Usage
 sqlite_unchanged [-s | -c ] [file]
         -s or --set:   store header in db
         -c or --check: compare header with stored header
