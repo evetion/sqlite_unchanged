@@ -1,2 +1,4 @@
 language: c
 compiler: gcc
+script:
+  gcc check.c -o sqlite_unchanged
