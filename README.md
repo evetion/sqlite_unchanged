@@ -17,17 +17,17 @@ For each write transaction an sqlite database will have its file change counter 
 The only collision occurs if the file change counter overflows and returns to its hardcoded value after 2.147.483.647 write transactions.
 
 ## Usage
-`sqlite_unchanged [-s | -c ] [file]
-        -s or --set:   store header in db
-        -c or --check: compare header with stored header
-        file: filename or path`
+`sqlite_unchanged [-s | -c ] [file]  
+        -s or --set:   store header in db  
+        -c or --check: compare header with stored header  
+        file: filename or path`  
 
-`./sqlite_unchanged -c test.sqlite
-File is not original.`
+`./sqlite_unchanged -c test.sqlite  
+File is not original.`  
 
-`./sqlite_unchanged -s test.sqlite
-Hardcoded values set, will now check for validity.
-File is original.`
+`./sqlite_unchanged -s test.sqlite  
+Hardcoded values set, will now check for validity.  
+File is original.`  
 
-`./sqlite_unchanged -c test.sqlite
-File is original.`
+`./sqlite_unchanged -c test.sqlite  
+File is original.`  
